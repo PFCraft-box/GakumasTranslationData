@@ -87,3 +87,13 @@ jobs:
           name: ${{ env.NEW_VERSION }}
           body: 'New release ${{ env.NEW_VERSION }}'
           allowUpdates: true  # 允许更新现有的Release
+          
+      - name: Commit and Push Changes
+        if: steps.submod_update.outputs.updated == 'true'
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git add .
+          git commit -m "Update submodules and version.txt to ${{ env.NEW_VERSION }}"
+          git push
+
