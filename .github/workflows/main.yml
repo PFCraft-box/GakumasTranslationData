@@ -2,7 +2,7 @@ name: Update Submodules and Release
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * *'  # 每天凌晨00:00运行
   workflow_dispatch:
 
 jobs:
@@ -11,35 +11,35 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4  # 更新到最新的稳定版本
         with:
           fetch-depth: 0
           submodules: 'recursive'
           
       - name: Check for submodule updates
-        id: submod_update
         run: |
           git submodule update --progress --init --force --remote
-          if [[ `git status --porcelain` ]]; then
-            echo "::set-output name=updated::true"
+          UPDATED=$(git status --porcelain)
+          if [ -n "$UPDATED" ]; then
+            echo "updated=true" >> $GITHUB_ENV
           else
-            echo "::set-output name=updated::false"
+            echo "updated=false" >> $GITHUB_ENV
           fi
 
       - name: Setup Node.js (latest version)
-        if: steps.submod_update.outputs.updated == 'true'
+        if: env.updated == 'true'
         uses: actions/setup-node@v3
         with:
           node-version: 'latest'
 
       - name: Install pnpm
-        if: steps.submod_update.outputs.updated == 'true'
+        if: env.updated == 'true'
         uses: pnpm/action-setup@v4.0.0
         with:
           version: 9
           
       - name: Update Localization
-        if: steps.submod_update.outputs.updated == 'true'
+        if: env.updated == 'true'
         run: |
           cd GakumasPreTranslation
           cp .env.sample .env
@@ -47,28 +47,27 @@ jobs:
           pnpm ts-node main.ts
           
       - name: Get game resources
-        if: steps.submod_update.outputs.updated == 'true'
+        if: env.updated == 'true'
         uses: actions/checkout@v4
         with:
           repository: DreamGallery/Campus-adv-txts
           ref: main
           path: Campus_adv_txts
       
-      - name: copy txt to tmp
-        if: steps.submod_update.outputs.updated == 'true'
+      - name: Copy txt to tmp
+        if: env.updated == 'true'
         run: |
           mkdir ./raw
-          ls
           cp -r Campus_adv_txts/Resource/adv* ./raw
           
       - name: Merge Resources
-        if: steps.submod_update.outputs.updated == 'true'
+        if: env.updated == 'true'
         run: |
           pip install -r requirements.txt
           python merge.py
 
       - name: Increment version and zip files
-        if: steps.submod_update.outputs.updated == 'true'
+        if: env.updated == 'true'
         run: |
           VERSION=$(cat version.txt | sed 's/v//')
           NEW_VERSION="v$(echo $VERSION | awk -F. '{ $NF++; printf "%d.%d.%d", $1, $2, $3 }')"
@@ -77,10 +76,9 @@ jobs:
           echo $NEW_VERSION > version.txt
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
           zip -r GakumasTranslationData.zip local-files version.txt
-
       
       - name: Create Release
-        if: steps.submod_update.outputs.updated == 'true'
+        if: env.updated == 'true'
         uses: ncipollo/release-action@v1
         with:
           artifacts: GakumasTranslationData.zip
@@ -88,15 +86,14 @@ jobs:
           tag: ${{ env.NEW_VERSION }}
           name: ${{ env.NEW_VERSION }}
           body: 'New release ${{ env.NEW_VERSION }}'
-          allowUpdates: true  # 允许更新现有的Release
-          
+          allowUpdates: true
+
       - name: Commit and Push Changes
-        if: steps.submod_update.outputs.updated == 'true'
+        if: env.updated == 'true'
         run: |
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
-          git add .
+          git add version.txt  # 仅添加需要的文件
+          git submodule foreach --recursive 'git add .'
           git commit -m "Update submodules and version.txt to ${{ env.NEW_VERSION }}"
           git push
-
-
