@@ -3,6 +3,7 @@ name: Update Submodules and Release
 on:
   schedule:
     - cron: '0 0 * * *'  # 每天00:00运行
+  workflow_dispatch:  # 允许手动触发
 
 jobs:
   check-and-release:
