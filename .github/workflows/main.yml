@@ -2,8 +2,8 @@ name: Update Submodules and Release
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # 每天00:00运行
-  workflow_dispatch:  # 允许手动触发
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
   check-and-release:
@@ -30,7 +30,7 @@ jobs:
         if: steps.submod_update.outputs.updated == 'true'
         uses: actions/setup-node@v3
         with:
-          node-version: 'latest'  # 使用Node.js的最新版本
+          node-version: 'latest'
 
       - name: Install pnpm
         if: steps.submod_update.outputs.updated == 'true'
@@ -47,6 +47,7 @@ jobs:
           pnpm ts-node main.ts
           
       - name: Get game resources
+        if: steps.submod_update.outputs.updated == 'true'
         uses: actions/checkout@v4
         with:
           repository: DreamGallery/Campus-adv-txts
@@ -54,6 +55,7 @@ jobs:
           path: Campus_adv_txts
       
       - name: copy txt to tmp
+        if: steps.submod_update.outputs.updated == 'true'
         run: |
           mkdir ./raw
           ls
