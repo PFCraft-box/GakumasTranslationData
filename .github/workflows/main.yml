@@ -34,8 +34,7 @@ jobs:
 
       - name: Install pnpm
         if: steps.submod_update.outputs.updated == 'true'
-        run: |
-          curl -fsSL https://get.pnpm.io/install.sh | sh -
+        uses: pnpm/action-setup@v4.0.0
 
       - name: Update Localization
         if: steps.submod_update.outputs.updated == 'true'
