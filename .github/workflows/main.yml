@@ -42,6 +42,7 @@ jobs:
         if: steps.submod_update.outputs.updated == 'true'
         run: |
           cd GakumasPreTranslation
+          cp .env.sample .env
           pnpm install
           pnpm ts-node main.ts
       
