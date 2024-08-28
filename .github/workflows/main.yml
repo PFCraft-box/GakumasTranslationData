@@ -55,8 +55,9 @@ jobs:
       
       - name: copy txt to tmp
         run: |
-          mkdir main/raw
-          cp -r Campus_adv_txts/Resource/adv* main/raw
+          mkdir ./raw
+          ls
+          cp -r Campus_adv_txts/Resource/adv* ./raw
           
       - name: Merge Resources
         if: steps.submod_update.outputs.updated == 'true'
