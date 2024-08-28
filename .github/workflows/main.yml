@@ -93,8 +93,7 @@ jobs:
         run: |
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
-          git add version.txt
-          git submodule foreach --recursive 'git add .'
+          git add .
           git commit -m "Update submodules and version.txt to ${{ env.NEW_VERSION }}"
           git push
 
