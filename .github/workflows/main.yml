@@ -93,7 +93,6 @@ jobs:
         run: |
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
-          git add version.txt  # 仅添加需要的文件
-          git submodule foreach --recursive 'git add .'
+          git add .
           git commit -m "Update submodules and version.txt to ${{ env.NEW_VERSION }}"
           git push
