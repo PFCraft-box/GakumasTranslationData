@@ -35,7 +35,9 @@ jobs:
       - name: Install pnpm
         if: steps.submod_update.outputs.updated == 'true'
         uses: pnpm/action-setup@v4.0.0
-
+        with:
+          version: 9
+          
       - name: Update Localization
         if: steps.submod_update.outputs.updated == 'true'
         run: |
