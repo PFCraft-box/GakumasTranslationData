@@ -25,12 +25,17 @@ jobs:
           else
             echo "::set-output name=updated::false"
           fi
-      
-      - name: Install Node.js and Python
+
+      - name: Setup Node.js (latest version)
         if: steps.submod_update.outputs.updated == 'true'
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
-          node-version: '16' # 选择合适的Node.js版本
+          node-version: 'latest'  # 使用Node.js的最新版本
+
+      - name: Install pnpm
+        if: steps.submod_update.outputs.updated == 'true'
+        run: |
+          curl -fsSL https://get.pnpm.io/install.sh | sh -
 
       - name: Update Localization
         if: steps.submod_update.outputs.updated == 'true'
