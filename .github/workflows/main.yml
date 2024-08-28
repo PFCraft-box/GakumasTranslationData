@@ -84,6 +84,6 @@ jobs:
           artifacts: GakumasTranslationData.zip
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ env.NEW_VERSION }}
-          name: Release ${{ env.NEW_VERSION }}
+          name: ${{ env.NEW_VERSION }}
           body: 'New release ${{ env.NEW_VERSION }}'
           allowUpdates: true  # 允许更新现有的Release
