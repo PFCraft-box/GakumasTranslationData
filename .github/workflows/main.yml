@@ -70,8 +70,11 @@ jobs:
         run: |
           VERSION=$(cat version.txt | sed 's/v//')
           NEW_VERSION="v$(echo $VERSION | awk -F. '{$NF+=1; OFS="."; print $0}')"
+          echo "Current VERSION: $VERSION"
+          echo "New VERSION: $NEW_VERSION"
           echo $NEW_VERSION > version.txt
           zip -r $NEW_VERSION.zip local-files version.txt
+
       
       - name: Create Release
         if: steps.submod_update.outputs.updated == 'true'
