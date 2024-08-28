@@ -45,7 +45,19 @@ jobs:
           cp .env.sample .env
           pnpm install
           pnpm ts-node main.ts
+          
+      - name: Get game resources
+        uses: actions/checkout@v4
+        with:
+          repository: DreamGallery/Campus-adv-txts
+          ref: main
+          path: Campus_adv_txts
       
+      - name: copy txt to tmp
+        run: |
+          mkdir main/raw
+          cp -r Campus_adv_txts/Resource/adv* main/raw
+          
       - name: Merge Resources
         if: steps.submod_update.outputs.updated == 'true'
         run: |
