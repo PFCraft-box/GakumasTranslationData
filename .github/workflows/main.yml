@@ -1,96 +1,67 @@
-name: Update and Release
+name: Update Submodules and Release
 
 on:
   schedule:
-    # 每天 00:00 运行
-    - cron: '0 0 * * *'
-  workflow_dispatch:  # 允许手动触发工作流
+    - cron: '0 0 * * *'  # 每天00:00运行
 
 jobs:
-  check_submodules_update:
+  check-and-release:
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
         with:
-          submodules: recursive  # 检查出包含所有子模块的完整仓库
-
-      - name: Update submodules
-        id: check_update
+          fetch-depth: 0
+          submodules: 'recursive'
+          
+      - name: Check for submodule updates
+        id: submod_update
         run: |
-          # 使用提供的命令来更新子模块
           git submodule update --progress --init --force --remote
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "true" > update_needed.txt
+          if [[ `git status --porcelain` ]]; then
+            echo "::set-output name=updated::true"
           else
-            echo "false" > update_needed.txt
+            echo "::set-output name=updated::false"
           fi
-
-      - name: Set output if update needed
-        id: set_output
-        run: echo "update_needed=$(cat update_needed.txt)" >> $GITHUB_OUTPUT
-
-  update_and_release:
-    runs-on: ubuntu-latest
-    needs: check_submodules_update
-    if: needs.check_submodules_update.outputs.update_needed == 'true'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      
+      - name: Install Node.js and Python
+        if: steps.submod_update.outputs.updated == 'true'
+        uses: actions/setup-node@v2
         with:
-          submodules: recursive  # 确保再次检查出所有子模块
+          node-version: '16' # 选择合适的Node.js版本
 
-      - name: Install dependencies for GakumasPreTranslation
+      - name: Update Localization
+        if: steps.submod_update.outputs.updated == 'true'
         run: |
           cd GakumasPreTranslation
           pnpm install
           pnpm ts-node main.ts
-
-      - name: Merge resources
+      
+      - name: Merge Resources
+        if: steps.submod_update.outputs.updated == 'true'
         run: |
           pip install -r requirements.txt
           python merge.py
 
-      - name: Debug: List files and folders
+      - name: Increment version and zip files
+        if: steps.submod_update.outputs.updated == 'true'
         run: |
-          echo "Current directory contents:"
-          ls -la
-          echo "local-files contents:"
-          ls -la local-files
-
-      - name: Increment version and prepare release
-        id: increment_version
-        run: |
-          current_version=$(cat version.txt)
-          # 假设版本格式为 v0.1.0，使用 awk 增加版本号
-          new_version=$(echo $current_version | awk -F. -v OFS=. '{$NF += 1 ; print}')
-          echo $new_version > version.txt
-
-          # 确保 local-files 目录存在并非空
-          if [ ! -d "local-files" ] || [ -z "$(ls -A local-files)" ]; then
-            echo "Error: 'local-files' directory is missing or empty!"
-            exit 1
-          fi
-
-          # 打包 local-files 和更新后的 version.txt
-          zip -r release_${new_version}.zip local-files version.txt
-          
-          # 设置输出以供后续步骤使用
-          echo "new_version=$new_version" >> $GITHUB_OUTPUT
-
+          VERSION=$(cat version.txt | sed 's/v//')
+          NEW_VERSION="v$(echo $VERSION | awk -F. '{$NF+=1; OFS="."; print $0}')"
+          echo $NEW_VERSION > version.txt
+          zip -r $NEW_VERSION.zip local-files version.txt
+      
       - name: Create Release
+        if: steps.submod_update.outputs.updated == 'true'
         uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.increment_version.outputs.new_version }}
-          release_name: Release ${{ steps.increment_version.outputs.new_version }}
+          tag_name: ${{ env.NEW_VERSION }}
+          release_name: Release ${{ env.NEW_VERSION }}
           draft: false
           prerelease: false
-          generate_release_notes: true
-
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release_${{ steps.increment_version.outputs.new_version }}.zip
-          asset_name: release_${{ steps.increment_version.outputs.new_version }}.zip
-          asset_content_type: application/zip
+          body: 'New release ${{ env.NEW_VERSION }}'
+          commitish: ${{ github.sha }}
+          assets_path: ./${{ env.NEW_VERSION }}.zip
