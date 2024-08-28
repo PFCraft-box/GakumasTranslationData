@@ -73,6 +73,7 @@ jobs:
           echo "Current VERSION: $VERSION"
           echo "New VERSION: $NEW_VERSION"
           echo $NEW_VERSION > version.txt
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
           zip -r GakumasTranslationData.zip local-files version.txt
 
       
